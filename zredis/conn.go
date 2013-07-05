@@ -64,5 +64,14 @@ func newConn(connInfo *ConnInfo) (redisConn *RedisConn) {
 	return
 }
 
+func processRequest(cmd *Command,args [][]byte){
+
+	buff := CreateRequestBytes(cmd, args)
+	sendRequest(c.conn, buff) 
+
+	
+	resp, e := GetResponse(c.reader, cmd)
+}
+
 
 
