@@ -24,6 +24,19 @@ type RedisConn struct {
 	reader   *bufio.Reader
 }
 
+func DefaultConnInfo() *ConnInfo {
+	return &ConnInfo{
+		"127.0.0.1",
+		5379,
+		"",
+		1,
+		4096,
+		4096,
+		10 * time.Second,
+		10 * time.Second
+	}
+}
+
 func NewConn(connInfo *ConnInfo) (redisConn *RedisConn) {
 	funcInfo := "newConn"
 
