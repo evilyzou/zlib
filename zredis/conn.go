@@ -19,29 +19,29 @@ type ConnInfo struct {
 }
 
 type RedisConn struct {
-	connInfo ConnInfo
-	conn     net.TCPConn
-	reder    bufio.Reader
+	connInfo *ConnInfo
+	conn     net.Conn
+	reader   *bufio.Reader
 }
 
-func newConn(connInfo *ConnInfo) (redisConn *RedisConn) {
-	funInfo := "newConn"
+func NewConn(connInfo *ConnInfo) (redisConn *RedisConn) {
+	funcInfo := "newConn"
 
 	redisConn = new(RedisConn)
 	if redisConn == nil {
-		panic(fmt.Errorf("%s: failed to allocate connHdl",funInfo))
+		panic(fmt.Errorf("%s: failed to allocate connHdl", funcInfo))
 	}
 
-	var mode addr string 
+	var mode, addr string
 	if connInfo.port == 0 {
-		mode ="unix"
+		mode = "unix"
 		addr = connInfo.host
 	} else {
-		mode ="tcp"
-		addr = fmt.Sprintf("%s:%d", connInfo.host,connInfo.port)
-		_,err := net.ResolveTCPAddr("tcp", addr)
+		mode = "tcp"
+		addr = fmt.Sprintf("%s:%d", connInfo.host, connInfo.port)
+		_, err := net.ResolveTCPAddr("tcp", addr)
 		if err != nil {
-			panic(fmt.Errorf("%s(): failed to resolve remote address %s", funInfo, addr))
+			panic(fmt.Errorf("%s(): failed to resolve remote address %s", funcInfo, addr))
 		}
 	}
 
@@ -59,19 +59,18 @@ func newConn(connInfo *ConnInfo) (redisConn *RedisConn) {
 		redisConn.conn = conn
 		redisConn.connInfo = connInfo
 		bufsize := 4096
-		redisConn.reder = bufio.NewReaderSize(conn, bufsize)
+		redisConn.reader = bufio.NewReaderSize(conn, bufsize)
 	}
 	return
 }
 
-func processRequest(cmd *Command,args [][]byte){
+func (c *RedisConn) ProcessRequest(cmd *Command, key string) (resp Response, err Error) {
 
+	args := [][]byte{[]byte(key)}
 	buff := CreateRequestBytes(cmd, args)
-	sendRequest(c.conn, buff) 
+	sendRequest(c.conn, buff)
 
-	
-	resp, e := GetResponse(c.reader, cmd)
+	resp, err = GetResponse(c.reader, cmd)
+
+	return
 }
-
-
-
