@@ -19,23 +19,28 @@ namespace Conference
             new ENodeFrameworkUnitTestInitializer().Initialize();
 
             var memoryCache = ObjectContainer.Resolve<IMemoryCache>();
+            var commandService = ObjectContainer.Resolve<ICommandService>();
             //初始化一个Conferecen 要求一个座位数量为5 的和一个座位数量为10
             var conferenceGuid = Guid.NewGuid();
             var orderId = Guid.NewGuid();
+
+            var seatType = Guid.NewGuid();
+            var addSeats = new AddSeats(conferenceGuid, seatType, 10);
+            commandService.Execute(addSeats);
+            var seatAvailability = memoryCache.Get<SeatsAvailability>(conferenceGuid.ToString());
+
             RegisterToConference conference =new RegisterToConference(conferenceGuid,orderId);
-            
 
-            var seatGuid1 = Guid.NewGuid();
-            var seatGuid2 = Guid.NewGuid();
-            conference.Seats.Add(new SeatQuantity(seatGuid1,10));
-            conference.Seats.Add(new SeatQuantity(seatGuid2, 5));
 
-            var commandService = ObjectContainer.Resolve<ICommandService>();
+            conference.Seats.Add(new SeatQuantity(seatType, 3));
+
             commandService.Execute(conference);
 
             Thread.Sleep(1000);
 
             var order = memoryCache.Get<Order>(orderId.ToString());
+
+            var seatAvailability2 = memoryCache.Get<SeatsAvailability>(conferenceGuid.ToString());
             Console.WriteLine("orderId:"+order);
 
             Console.WriteLine("press enter...");

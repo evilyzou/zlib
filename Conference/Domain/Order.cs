@@ -13,8 +13,9 @@ namespace Conference.Domain
     //订单聚合根
     [Serializable]
     public class Order : AggregateRoot<Guid>,
-        IEventHandler<OrderPlaced>
-
+        IEventHandler<OrderPlaced>,
+        IEventHandler<OrderPartiallyReserved>,
+        IEventHandler<OrderReservationCompleted>
     {
         private static readonly TimeSpan ReservationAutoExpiration = TimeSpan.FromMinutes(15);
 
@@ -34,6 +35,29 @@ namespace Conference.Domain
 
         }
 
+        public void MarkAsReserved(DateTime expirationDate, IEnumerable<SeatQuantity> reservedSeats)
+        {
+            if (this.isConfirmed)
+                throw new InvalidOperationException("Cannot modify a confirmed order.");
+
+            var reserved = reservedSeats.ToList();
+
+            if (this.seats.Any(item => item.Quantity != 0 && !reserved.Any(seat => seat.SeatType == item.SeatType && seat.Quantity == item.Quantity)))
+            {
+                //部分成交
+                RaiseEvent(new OrderPartiallyReserved (expirationDate,  reserved.ToArray() ));
+            }
+            else
+            {
+                RaiseEvent(new OrderReservationCompleted (expirationDate, reserved.ToArray() ));
+            }
+        }
+
+        public void Confirm(Guid conferenceId,Guid orderId)
+        {
+            RaiseEvent(new OrderConfirmed(conferenceId,orderId,this.seats.AsReadOnly()));
+        }
+
 
         private static List<SeatQuantity> ConvertItems(IEnumerable<OrderItem> items)
         {
@@ -45,5 +69,23 @@ namespace Conference.Domain
             this.conferenceId = evnt.ConferenceId;
             this.seats = evnt.Seats.ToList();
         }
+
+        public void Handle(OrderPartiallyReserved e)
+        {
+            this.seats = e.Seats.ToList();
+        }
+
+        public void Handle(OrderReservationCompleted e)
+        {
+            this.seats = e.Seats.ToList();
+        }
+
+        public void Handler(OrderConfirmed e)
+        {
+            this.isConfirmed = true;
+        }
+
+       
+
     }
 }

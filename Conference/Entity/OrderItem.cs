@@ -5,6 +5,7 @@ using System.Text;
 
 namespace Conference.Entity
 {
+    [Serializable]
     public class OrderItem
     {
         public OrderItem(Guid seatType, int quantity)
